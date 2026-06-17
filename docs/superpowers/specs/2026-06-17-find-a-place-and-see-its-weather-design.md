@@ -120,3 +120,12 @@ Per Technical-Context.MD ("tests for logic"). Tests assert external behaviour th
 - **(e) authority:** live API via `curl` to `api.open-meteo.com` on 2026-06-17 — the error envelope and non-200 behaviour were captured directly (HTTP 429); the success-payload shape is **capture-pending** (rate-limited that day) and must be grounded by a real fixture during implementation, not from model memory.
 
 > Note on internal boundaries: the module → React component calls (`Location[]`, `CurrentConditions` crossing into `CandidateList`/`CurrentConditionsReadout`) are in-process, statically-typed TypeScript contracts within one bundle — code (the types) is the authority. They are not one of the seven taxonomy channels and are intentionally not listed as seams. The data-shape/nullability risk that *does* bite lives at the two external network boundaries above, where it is fully specified.
+
+## Feature-doc-gauntlet sign-off
+
+- **Result:** fail
+- **Date:** 2026-06-17
+- **Summary:** Seam review failed the gate: Seam 2's forecast *success* path ships an unproven contract — the success fixture is CAPTURE-PENDING, so its (c) shape, (d) proof, and (e) authority are grounded on memory rather than a real capture from the live service. Doc/ADR consistency and cross-artefact consistency both passed.
+- **Leaves:** check-seam-cynicism (fail), check-doc-adr-consistency (pass), check-artefact-consistency (pass)
+- **Open findings (root cause):** the Open-Meteo forecast success payload was never captured live (the shared egress IP returned HTTP 429 on 2026-06-17). Until a real success fixture is captured from `api.open-meteo.com` and Seam 2's (c)/(d)/(e) are re-grounded against it (and Plan Task 5 updated to match), the Feature is NOT cleared for `enate-to-stories`.
+- **Next step:** `/fix-feature-docs` — capture the real fixture, re-ground Seam 2, then re-run the full gauntlet.
