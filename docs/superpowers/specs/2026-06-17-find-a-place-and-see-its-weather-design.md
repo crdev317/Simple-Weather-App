@@ -124,7 +124,9 @@ Per Technical-Context.MD ("tests for logic"). Tests assert external behaviour th
 
 ## Feature-doc-gauntlet sign-off
 
-- **Result:** pass (by accepted limitation — human override, see below)
+- **Result:** FAIL — blocked, paused pending real forecast capture (final human decision, 2026-06-17). NOT cleared for `enate-to-stories`.
+- **Final disposition:** the accepted-limitation override below was offered and initially taken, then **superseded** by the Feature owner's decision (2026-06-17) to **pause and obtain a genuine proof** rather than proceed on the override. The Feature stays blocked until Seam 2's forecast success path is grounded by a real capture and the gauntlet returns a clean automated pass.
+- **To resume:** (1) capture a real Open-Meteo forecast success payload (rate limit resets next day, or use an un-rate-limited network) per Plan Task 5 Step 1; (2) re-ground Seam 2 (c)/(d)/(e) against it and correct the Forecast types/mapping/test if the shape differs; (3) re-run the full `/feature-doc-gauntlet` — expect all three leaves to pass once the capture is real; (4) update this sign-off to a genuine `pass`; (5) then `/enate-to-stories`.
 - **Date:** 2026-06-17
 - **Automated gauntlet result (run 1):** fail. check-seam-cynicism (fail), check-doc-adr-consistency (pass), check-artefact-consistency (pass). The seam leaf flagged Seam 2's forecast *success* path as an unproven external contract.
 - **Fix pass (`/fix-feature-docs`, 2026-06-17):** the four findings deduplicated to one root cause — the Open-Meteo forecast success payload cannot be captured from this environment (live API 429 "try again tomorrow"; docs 403; OpenAPI raw path 404). Re-verified live against the service, not assumed. Resolution actions taken:
