@@ -42,7 +42,7 @@ Simple-Weather-App/
 │   │   └── __fixtures__/
 │   │       ├── geocoding-springfield.json   # real capture
 │   │       ├── geocoding-no-match.json       # real capture
-│   │       ├── forecast-success.json         # CAPTURE-PENDING (see Task 5)
+│   │       ├── forecast-success.json         # real capture, committed (2026-06-18)
 │   │       └── forecast-error-429.json       # real capture
 │   ├── hooks/
 │   │   ├── useDebouncedValue.ts
@@ -458,32 +458,23 @@ git commit -m "feat: add Geocoding module (Seam 1) with real fixtures"
 
 Covers **Seam 2 (network-protocol, external)**. Contract verbatim: anonymous `GET .../v1/forecast?latitude=<lat>&longitude=<lon>&current=temperature_2m,weather_code`; success → `current.temperature_2m:number` (°C) + `current.weather_code:number` mapped to `CurrentConditions`; **non-200 returns `{error:true, reason:string}` and the module treats any non-OK HTTP as a rejection, never parsing it as weather.**
 
-> 🚧 **GATING TASK — accepted-limitation gate (see Spec sign-off, 2026-06-17).** The forecast *success* shape was NOT grounded at doc-stage (live capture rate-limited from the doc environment). Seam 2's success real-I/O proof is therefore gated **here**. **Step 1 is a hard blocker: the forecast success implementation (Steps 3–7) MUST NOT be written or trusted until a real success payload has been captured from `api.open-meteo.com` and its field names/types verified.** If the capture cannot be obtained, STOP and escalate — do NOT proceed against the provisional (memory-based) shape, and do NOT fabricate the fixture.
+> ✅ **Seam 2 success proof GROUNDED (2026-06-18).** A real success payload was captured from `api.open-meteo.com` (HTTP 200) once the daily rate limit reset, and committed as `src/weather/__fixtures__/forecast-success.json`. The previously-gated capture is **done**; the success shape is confirmed (`current.temperature_2m:number`, `current.weather_code:number`, `current_units` present). Step 1 below is now a quick verify-the-committed-fixture step, not a blocker.
 
 **Files:**
-- Create: `src/weather/__fixtures__/forecast-success.json` (capture-pending)
+- Use: `src/weather/__fixtures__/forecast-success.json` (real capture, already committed 2026-06-18)
 - Create: `src/weather/__fixtures__/forecast-error-429.json`
 - Create: `src/weather/forecast.ts`
 - Test: `src/weather/forecast.test.ts`
 
-- [ ] **Step 1: BLOCKING — capture the real success fixture and verify its shape (do this first; do not proceed without it)**
+- [ ] **Step 1: Verify the committed real success fixture**
 
-This is the gating proof for Seam 2's success path. A live success payload could not be captured from the doc environment (Open-Meteo daily rate limit → HTTP 429 "try again tomorrow"). Capture it now from an **un-rate-limited network**:
+The real fixture is already captured and committed at `src/weather/__fixtures__/forecast-success.json` (live capture from `api.open-meteo.com`, HTTP 200, 2026-06-18). Its content is:
 
-```bash
-curl -sS -w "\nHTTP_STATUS:%{http_code}\n" \
-  "https://api.open-meteo.com/v1/forecast?latitude=37.21533&longitude=-93.29824&current=temperature_2m,weather_code" \
-  -o src/weather/__fixtures__/forecast-success.json
-cat src/weather/__fixtures__/forecast-success.json
+```json
+{"latitude":37.2072,"longitude":-93.30584,"generationtime_ms":0.12946128845214844,"utc_offset_seconds":0,"timezone":"GMT","timezone_abbreviation":"GMT","elevation":397.0,"current_units":{"time":"iso8601","interval":"seconds","temperature_2m":"°C","weather_code":"wmo code"},"current":{"time":"2026-06-18T08:45","interval":900,"temperature_2m":23.6,"weather_code":3}}
 ```
 
-Expected: `HTTP_STATUS:200` and JSON containing a `current` object with numeric `temperature_2m` and `weather_code` (and a `current_units` object).
-
-**Then verify the shape before writing any implementation:**
-- Confirm the real field path is `current.temperature_2m` (number) and `current.weather_code` (number). The implementation in Step 5 (`ForecastResponse`) and the test assertion in Step 3 read exactly these paths.
-- If the captured shape differs (different field names/nesting/types), **correct `ForecastResponse`, the URL, the mapping (Step 5), and the test assertion (Step 3) to match the real capture** before proceeding.
-
-**Hard stop:** if you still get HTTP 429 or cannot otherwise capture a real success payload, **STOP and escalate to the Feature owner.** Do NOT write the forecast success mapping against the provisional shape, and do NOT hand-author this fixture — Seam 2's success proof is real-I/O-only by accepted limitation (Spec sign-off, 2026-06-17).
+Confirm it is present and that the module reads `current.temperature_2m` (number) and `current.weather_code` (number) — the paths used by `ForecastResponse` (Step 5) and the test assertion (Step 3). The service echoes its grid-cell `latitude/longitude` (37.2072/-93.30584), which the module ignores. If you re-capture and the shape ever differs, correct `ForecastResponse`, the URL, the mapping (Step 5), and the test (Step 3) to match — but do **not** hand-author the fixture; it must remain a real capture.
 
 - [ ] **Step 2: Save the real captured error fixture**
 
@@ -879,7 +870,7 @@ git commit -m "chore: finalize Feature 1 tracer bullet"
 ## Self-review notes
 
 - **Spec coverage:** search/geocode (Task 4), pick (Task 7 CandidateList), current temp + condition label (Tasks 3, 5, 7), debounce 300/min-2 (Tasks 6, 7), count=5 (Task 4), bare loading/error (Task 7), clear-on-new-Query (Task 7 `handleQueryChange`), tests for the three modules + hook (Tasks 3–6). All spec sections map to a task.
-- **Seam coverage:** Seam 1 → Task 4 (contract named; proof = real Springfield + no-match fixtures incl. absent-`results`→`[]`, plus non-OK rejection). Seam 2 → Task 5 (contract named; proof = captured success fixture + real 429 error fixture rejection; `weather_code` totality proven in Task 3). Capture-pending forecast success fixture is called out as the first step of Task 5.
+- **Seam coverage:** Seam 1 → Task 4 (contract named; proof = real Springfield + no-match fixtures incl. absent-`results`→`[]`, plus non-OK rejection). Seam 2 → Task 5 (contract named; proof = **real captured** success fixture + real 429 error fixture rejection; `weather_code` totality proven in Task 3). The forecast success fixture is a real capture committed at `src/weather/__fixtures__/forecast-success.json` (2026-06-18).
 - **Type consistency:** `Location`, `WeatherCondition`, `CurrentConditions`, `searchLocations`, `getCurrentWeather`, `toWeatherCondition`, `useDebouncedValue` are named identically across all tasks.
 - **No new dependencies** beyond Technical-Context.MD's list (Principle 4); strict mode confirmed (Principle 2); all logic modules tested (Principle 3).
 
@@ -894,4 +885,13 @@ Run 1 failed on check-seam-cynicism with 4 findings, all one root cause: **Seam 
 | Plan Task 5 carries gap forward | Task 5 turned into a **GATING** task with a hard-stop banner; Step 1 blocks success impl until real capture + shape verify | Plan Task 5 header has 🚧 gate; Step 1 titled "BLOCKING" with STOP-and-escalate |
 | Task 5 Step 3 success test = mock-on-both-sides until real | Step 1 requires the fixture be a **real capture** before Steps 3–7; hand-authoring forbidden | Plan Task 5 Step 1: "do NOT hand-author this fixture" |
 
-**Open residual (carried, not closed by a real proof):** the actual success capture happens at implementation time. Cleared to proceed only by the recorded human acceptance, not by a clean automated re-run.
+### Fix-pass mapping (feature-doc-gauntlet run 3 → fix, 2026-06-18)
+
+Run 3 surfaced two root causes; both closed:
+
+| Root cause (surfaced_by) | Fix | Closure check |
+|---|---|---|
+| Seam 2 success path unproven (check-seam-cynicism) | Re-verified the world: rate limit had reset, so a **real success payload was captured** (HTTP 200) and committed at `src/weather/__fixtures__/forecast-success.json`; Seam 2 (c)/(d)/(e) re-grounded; Task 5 de-gated to use the real fixture | Fixture file exists with real `current.temperature_2m:23.6`/`weather_code:3`; Spec Seam 2 says "GROUNDED (real capture, 2026-06-18)"; no "capture-pending"/"NOT YET GROUNDED" remains |
+| C1 sign-off self-contradiction (check-artefact-consistency) | Withdrew the override "cleared" clauses from the Spec sign-off; single unambiguous outcome | grep: no "cleared for enate-to-stories"/"clearance stands" outside historical run-note context |
+
+**No open residuals.** The previously-gated forecast success proof is now a real committed capture. Ready for a full `/feature-doc-gauntlet` re-run.
