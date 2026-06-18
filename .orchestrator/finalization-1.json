@@ -1,0 +1,7 @@
+{
+  "skill": "finalization",
+  "result": "pass",
+  "reason": null,
+  "summary": "ADR compliance passed; docs synced.",
+  "findings": []
+}

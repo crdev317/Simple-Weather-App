@@ -1,0 +1,50 @@
+{
+  "results": [
+    {
+      "id": 4409896,
+      "name": "Springfield",
+      "latitude": 37.21533,
+      "longitude": -93.29824,
+      "elevation": 396.0,
+      "feature_code": "PPLA2",
+      "country_code": "US",
+      "timezone": "America/Chicago",
+      "population": 170188,
+      "country_id": 6252001,
+      "country": "United States",
+      "admin1": "Missouri",
+      "admin2": "Greene"
+    },
+    {
+      "id": 4250542,
+      "name": "Springfield",
+      "latitude": 39.80172,
+      "longitude": -89.64371,
+      "elevation": 182.0,
+      "feature_code": "PPLA",
+      "country_code": "US",
+      "timezone": "America/Chicago",
+      "population": 114394,
+      "country_id": 6252001,
+      "country": "United States",
+      "admin1": "Illinois",
+      "admin2": "Sangamon"
+    },
+    {
+      "id": 4951788,
+      "name": "Springfield",
+      "latitude": 42.10148,
+      "longitude": -72.58981,
+      "elevation": 25.0,
+      "feature_code": "PPL",
+      "country_code": "US",
+      "timezone": "America/New_York",
+      "population": 154341,
+      "country_id": 6252001,
+      "country": "United States",
+      "admin1": "Massachusetts",
+      "admin2": "Hampden"
+    }
+  ],
+  "generationtime_ms": 1.2015104
+}

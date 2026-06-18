@@ -25,7 +25,7 @@ This is a **frontend-only SPA** — no backend. The browser calls the weather AP
 **Styling:** styled-components (CSS-in-JS, component-scoped)
 **Data fetching / server state:** @tanstack/react-query over the native `fetch` API (no separate HTTP client — do not add axios)
 **Testing:** vitest, @testing-library/react, @testing-library/jest-dom
-**Lint/format:** eslint, prettier
+**Lint/format:** eslint, prettier — *intended, not yet installed* (no `package.json` entries as of Story #4; add when lint/format tooling is scaffolded)
 
 ## Instrumentation
 No external monitoring service. Two mechanisms:
