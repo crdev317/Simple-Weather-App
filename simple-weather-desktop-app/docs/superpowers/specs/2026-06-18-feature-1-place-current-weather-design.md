@@ -94,3 +94,14 @@ Per `Technical-Context.MD` (every seam gets real-IO on ≥1 side; treat Open-Met
 **Authentication note (first contact, Seam 3):** Open-Meteo's free tier requires **no authentication** — no API key, token, or auth header — for both the geocoding and forecast endpoints (a commercial keyed tier exists but is out of scope; per `Technical-Context.MD`, were a keyed provider ever adopted the key would live in the Rust core, never the webview bundle). All later Open-Meteo seams inherit "no auth" by reference.
 
 **Channel classes deliberately not crossed by Feature 1:** subprocess, env-var, prior-remote-state, persistent-on-disk-state (no caching until Feature 3), and host-OS/runtime (the geocode→fetch→render path has no OS-divergent contract; the platform matrix still runs the Rust tests on Win/Mac/Linux, but there is no OS-specific boundary assertion to make here).
+
+## Feature-doc-gauntlet sign-off
+
+- **Result:** fail
+- **Date:** 2026-06-18
+- **Summary:** check-seam-cynicism found the primary Tauri `invoke` seam (Seams 1 & 2) proven mock-on-both-sides; check-doc-adr-consistency and check-artefact-consistency passed.
+- **Leaves:** check-seam-cynicism, check-doc-adr-consistency, check-artefact-consistency
+- **Open findings:**
+  - *(check-seam-cynicism)* **Primary `invoke` seam proven mock-on-both-sides.** Seams 1 & 2 are split into a Rust-side `serde_json::to_string` assertion (Plan Task 5) and a frontend test that *mocks* `invoke` (Task 7) / mocks `../api` (Task 11) and resolves hand-authored literals. No test takes the **real Rust serializer output** and parses it as the TS type, so the format contract — notably `CurrentConditions`'s `#[serde(rename_all = "camelCase")]` emitting `temperatureC`/`weatherCode`/`conditionLabel` — is never crossed. This is the taxonomy's "mock-on-both-sides as proof" anti-pattern and violates Technical-Context's named primary seam ("frontend tested against a real `invoke` to a test harness or replayed fixtures"). Fix: add a round-trip step where a fixture produced by the real Rust command serializer is parsed into the TS `LocationCandidate`/`CurrentConditions` (would also pin the un-asserted `LocationCandidate` camelCase coincidence).
+
+> **Do not proceed to `/enate-to-stories`.** Route the Spec + Plan through `/fix-feature-docs`, then re-run the full gauntlet.
