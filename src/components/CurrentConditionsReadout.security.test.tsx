@@ -42,3 +42,25 @@ describe('CurrentConditionsReadout renders Current Conditions as inert text (XSS
     expect(screen.getByText(/24°C — Overcast/)).toBeInTheDocument()
   })
 })
+
+// The render path is the last line of defence: even if a non-finite temperature
+// reached it (a malformed 200 slipping past the mapper, a future regression), it
+// must fail closed to the error state rather than emit a "NaN°C" / "undefined°C"
+// text node to the user.
+describe('CurrentConditionsReadout fails closed on a non-finite temperature', () => {
+  it.each([NaN, Infinity, -Infinity])(
+    'shows the error state instead of rendering %s as a temperature',
+    (badTemperature) => {
+      const conditions: CurrentConditions = {
+        temperatureC: badTemperature,
+        condition: { label: 'Overcast' },
+      }
+
+      render(<CurrentConditionsReadout location={location} conditions={conditions} />)
+
+      expect(screen.getByText(/something went wrong/i)).toBeInTheDocument()
+      expect(screen.queryByText(/NaN/)).toBeNull()
+      expect(screen.queryByText(/Infinity/)).toBeNull()
+    },
+  )
+})
