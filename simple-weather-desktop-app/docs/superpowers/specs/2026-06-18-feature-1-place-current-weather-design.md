@@ -97,13 +97,9 @@ Per `Technical-Context.MD` (every seam gets real-IO on ≥1 side; treat Open-Met
 
 ## Feature-doc-gauntlet sign-off
 
-- **Result:** fail
+- **Result:** pass
 - **Date:** 2026-06-18
-- **Summary:** check-seam-cynicism found the primary Tauri `invoke` seam (Seams 1 & 2) proven mock-on-both-sides; check-doc-adr-consistency and check-artefact-consistency passed.
+- **Summary:** All three leaves passed. The prior run's sole blocker — the primary Tauri `invoke` seam (Seams 1 & 2) proven mock-on-both-sides — was closed by the shared-golden-fixture contract round-trip in **Plan Task 8b**: the real Rust serializer output is pinned to a committed golden fixture and parsed by the TS type, so the `#[serde(rename_all = "camelCase")]` wire contract can no longer drift silently.
 - **Leaves:** check-seam-cynicism, check-doc-adr-consistency, check-artefact-consistency
-- **Open findings:**
-  - *(check-seam-cynicism)* **Primary `invoke` seam proven mock-on-both-sides.** Seams 1 & 2 are split into a Rust-side `serde_json::to_string` assertion (Plan Task 5) and a frontend test that *mocks* `invoke` (Task 7) / mocks `../api` (Task 11) and resolves hand-authored literals. No test takes the **real Rust serializer output** and parses it as the TS type, so the format contract — notably `CurrentConditions`'s `#[serde(rename_all = "camelCase")]` emitting `temperatureC`/`weatherCode`/`conditionLabel` — is never crossed. This is the taxonomy's "mock-on-both-sides as proof" anti-pattern and violates Technical-Context's named primary seam ("frontend tested against a real `invoke` to a test harness or replayed fixtures"). Fix: add a round-trip step where a fixture produced by the real Rust command serializer is parsed into the TS `LocationCandidate`/`CurrentConditions` (would also pin the un-asserted `LocationCandidate` camelCase coincidence).
 
-> **Do not proceed to `/enate-to-stories`.** Route the Spec + Plan through `/fix-feature-docs`, then re-run the full gauntlet.
->
-> **Fix status (2026-06-18):** `/fix-feature-docs` applied — the seam finding is closed via a shared-golden-fixture contract round-trip (real Rust serializer output parsed by the TS type; new Plan Task 7b), and on-path observations (count drift, no-matches copy, `log` package) swept. **Awaiting a full gauntlet re-run** — this `fail` sign-off stands until the re-run overwrites it.
+> **Cleared for `/enate-to-stories`.** History: a first 2026-06-18 run failed on the invoke-seam mock-on-both-sides finding; `/fix-feature-docs` added Task 8b and swept the on-path observations (count drift, no-matches copy, `log` package), and this full re-run passed clean.
