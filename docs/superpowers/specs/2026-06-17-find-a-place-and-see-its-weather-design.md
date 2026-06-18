@@ -124,10 +124,11 @@ Per Technical-Context.MD ("tests for logic"). Tests assert external behaviour th
 
 ## Feature-doc-gauntlet sign-off
 
-- **Result:** FAIL (run 3) — **fix pass complete (2026-06-18); both root causes closed; awaiting a full gauntlet re-run to confirm a clean pass.** Not yet cleared for `enate-to-stories` (no clean gauntlet run exists *since* the fix — only the gauntlet's own sign-off can grant the pass).
-- **Final disposition (2026-06-18):** the Seam 2 blocker is resolved — a **real forecast success payload was captured** from `api.open-meteo.com` (HTTP 200) once the daily rate limit reset, saved as `src/weather/__fixtures__/forecast-success.json`, and Seam 2 (c)/(d)/(e) re-grounded against it. The earlier accepted-limitation override is **superseded and withdrawn** (it grants no clearance and is now moot). The C1 sign-off self-contradiction is fixed. The documents are ready for a full `/feature-doc-gauntlet` re-run, which is now expected to pass all three leaves.
-- **To resume:** run the full `/feature-doc-gauntlet` → expect all three leaves green → it writes a genuine `pass` here → then `/enate-to-stories`.
-- **Residual risk:** none outstanding for Seam 2 — the success shape is now grounded on the real capture (the provisional shape matched it exactly: `current.temperature_2m`, `current.weather_code`).
+- **Result:** **PASS** (run 4, 2026-06-18). **Cleared for `enate-to-stories`.**
+- **Summary:** the confirming re-run after the fix pass returned a clean 3/3 — check-seam-cynicism (pass: both Open-Meteo seams carry a falsifiable contract and real captured-fixture proof, the forecast success path now grounded on `src/weather/__fixtures__/forecast-success.json`), check-doc-adr-consistency (pass), check-artefact-consistency (pass: the run-3 C1 sign-off self-contradiction is resolved; Seam 2 "GROUNDED" wording is consistent with the de-gated Plan Task 5 and the committed fixture).
+- **Leaves:** check-seam-cynicism (pass), check-doc-adr-consistency (pass), check-artefact-consistency (pass).
+- **Non-gating observations (for later, not blocking):** the domain type exposes Open-Meteo's raw field name `admin1` rather than the Context.MD term *region* (Spec flags it as "Region (Open-Meteo admin1)"); consider aligning to *region* in a later pass.
+- **Date:** 2026-06-18
 
 ### Run history
 
@@ -139,3 +140,4 @@ Per Technical-Context.MD ("tests for logic"). Tests assert external behaviour th
 - **Fix pass (`/fix-feature-docs`, 2026-06-18):** two run-3 root causes, both closed:
   1. **Seam 2 success unproven (A)** — re-verified the world (not the document): the daily rate limit had reset, so a **real success payload was captured** (HTTP 200) and saved as `src/weather/__fixtures__/forecast-success.json`. Seam 2 (c)/(d)/(e) re-grounded on it; the provisional shape was confirmed correct (`current.temperature_2m:23.6`, `current.weather_code:3`). Plan Task 5 de-gated to use the real fixture. **Closed — real proof now exists.**
   2. **C1 sign-off self-contradiction (B)** — withdrew the override clauses; the sign-off now has one unambiguous outcome. Closure grep: no residual "cleared for enate-to-stories"/"clearance stands" outside historical run notes. **Closed.**
+- **Run 4 (2026-06-18, confirming re-run):** **PASS.** check-seam-cynicism (pass), check-doc-adr-consistency (pass), check-artefact-consistency (pass). All run-3 root causes verified closed against the real fixtures. This is the operative clearance for `enate-to-stories`.
