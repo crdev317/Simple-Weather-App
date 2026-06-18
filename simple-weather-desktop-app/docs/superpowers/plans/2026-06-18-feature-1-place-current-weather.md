@@ -41,8 +41,13 @@ simple-weather-desktop-app/
 │   └── __tests__/
 │       ├── api.test.ts
 │       ├── weatherIcons.test.ts
+│       ├── contract.test.ts           # Seam 1/2 golden round-trip (real Rust output → TS type)
 │       ├── CandidateList.test.tsx
+│       ├── CurrentConditionsPanel.test.tsx
 │       └── App.test.tsx
+├── contract-fixtures/                # golden payloads emitted by the real Rust serializer (Seam 1/2 proof)
+│   ├── location_candidates.json
+│   └── current_conditions.json
 └── src-tauri/
     ├── Cargo.toml
     ├── tauri.conf.json
@@ -116,10 +121,11 @@ simple-weather-desktop-app/
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+    "resolveJsonModule": true,
     "jsx": "react-jsx",
     "types": ["vitest/globals", "@testing-library/jest-dom"]
   },
-  "include": ["src"]
+  "include": ["src", "contract-fixtures"]
 }
 ```
 
@@ -357,7 +363,7 @@ git commit -m "feat(rust): weather types + WMO code->label mapping"
 
 ```bash
 cd simple-weather-desktop-app/src-tauri/src/fixtures
-curl -s "https://geocoding-api.open-meteo.com/v1/search?name=Springfield&count=3&language=en&format=json" -o geocode_multi.json
+curl -s "https://geocoding-api.open-meteo.com/v1/search?name=Springfield&count=8&language=en&format=json" -o geocode_multi.json
 curl -s "https://geocoding-api.open-meteo.com/v1/search?name=zzzzxqnotaplace&count=3&language=en&format=json" -o geocode_zero.json
 curl -s "https://geocoding-api.open-meteo.com/v1/search?name=Vatican&count=1&language=en&format=json" -o geocode_no_admin1.json
 ```
@@ -906,6 +912,96 @@ git commit -m "feat(ui): WMO code->icon map with full-coverage test (Seam 2)"
 
 ---
 
+## Task 8b: Seam contract round-trip — real Rust serializer output parsed by the TS type (Seams 1 & 2 proof)
+
+This is the **boundary-crossing proof** for the `invoke` seam. A committed golden fixture is pinned to the *real* Rust serializer output by a Rust equality test, and the frontend parses that **same** fixture into its TS type. Neither side hand-authors the payload the other trusts, so the `camelCase` contract cannot drift silently. (The flow-test `invoke` mocks in Tasks 7 & 11 stay — they exercise orchestration, not the wire shape, which is pinned here.)
+
+**Files:**
+- Create: `contract-fixtures/location_candidates.json`, `contract-fixtures/current_conditions.json`
+- Modify: `src-tauri/src/commands.rs` (add round-trip tests)
+- Create: `src/__tests__/contract.test.ts`
+
+- [ ] **Step 1: Write the golden fixtures** (these are the agreed wire shape; the Rust test below proves the real serializer emits exactly this)
+
+`contract-fixtures/location_candidates.json`:
+```json
+[{"name":"Vatican City","region":null,"country":"Vatican","latitude":41.9,"longitude":12.45}]
+```
+
+`contract-fixtures/current_conditions.json`:
+```json
+{"temperatureC":21.0,"weatherCode":0,"conditionLabel":"Clear sky"}
+```
+
+- [ ] **Step 2: Write the failing Rust round-trip test** (append to `commands.rs` `mod tests`)
+
+```rust
+    use crate::weather_provider::{CurrentConditions, LocationCandidate};
+
+    #[test]
+    fn location_candidate_serializer_matches_golden_fixture() {
+        let sample = vec![LocationCandidate {
+            name: "Vatican City".into(), region: None, country: "Vatican".into(),
+            latitude: 41.9, longitude: 12.45,
+        }];
+        let golden: serde_json::Value =
+            serde_json::from_str(include_str!("../../contract-fixtures/location_candidates.json")).unwrap();
+        assert_eq!(serde_json::to_value(&sample).unwrap(), golden);
+    }
+
+    #[test]
+    fn current_conditions_serializer_matches_golden_fixture() {
+        let sample = CurrentConditions { temperature_c: 21.0, weather_code: 0, condition_label: "Clear sky".into() };
+        let golden: serde_json::Value =
+            serde_json::from_str(include_str!("../../contract-fixtures/current_conditions.json")).unwrap();
+        // This is the ONLY assertion that proves `#[serde(rename_all = "camelCase")]` holds.
+        assert_eq!(serde_json::to_value(&sample).unwrap(), golden);
+    }
+```
+
+- [ ] **Step 3: Run to verify it fails, then passes**
+
+Run: `cd src-tauri && cargo test serializer_matches_golden`
+Expected: FAIL if the golden keys disagree with the serializer (e.g. `rename_all` missing → `temperature_c` ≠ `temperatureC`); PASS once the structs from Tasks 2 & 5 serialize to the golden shape.
+
+- [ ] **Step 4: Write the failing frontend round-trip test** (`src/__tests__/contract.test.ts`)
+
+```ts
+import { describe, it, expect } from "vitest";
+import candidates from "../../contract-fixtures/location_candidates.json";
+import current from "../../contract-fixtures/current_conditions.json";
+import type { CurrentConditions, LocationCandidate } from "../types";
+
+describe("invoke seam contract — real Rust serializer output parses as the TS type", () => {
+  it("LocationCandidate golden parses with the exact key set incl null region", () => {
+    const parsed = candidates as LocationCandidate[];
+    expect(Object.keys(parsed[0]).sort()).toEqual(["country", "latitude", "longitude", "name", "region"]);
+    expect(parsed[0].region).toBeNull();
+  });
+
+  it("CurrentConditions golden parses with the exact camelCase key set", () => {
+    const parsed = current as CurrentConditions;
+    expect(Object.keys(parsed).sort()).toEqual(["conditionLabel", "temperatureC", "weatherCode"]);
+    expect(parsed.temperatureC).toBe(21);
+    expect(parsed.conditionLabel).toBe("Clear sky");
+  });
+});
+```
+
+- [ ] **Step 5: Run to verify it fails, then passes**
+
+Run: `npm test -- contract`
+Expected: FAIL until `src/types.ts` (Task 7) matches the golden key set; PASS once they agree. A future divergence (TS type renamed, or Rust `rename_all` dropped) turns this test **and** the Step-2 Rust test red.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add simple-weather-desktop-app/contract-fixtures simple-weather-desktop-app/src-tauri/src/commands.rs simple-weather-desktop-app/src/__tests__/contract.test.ts
+git commit -m "test: pin invoke seam wire contract via real-serializer golden round-trip (Seams 1/2)"
+```
+
+---
+
 ## Task 9: CandidateList component (render + null region)
 
 **Files:**
@@ -1261,8 +1357,8 @@ git add -A && git commit -m "test: confirm Feature 1 across platform matrix" || 
 **3. Type consistency:** `LocationCandidate`/`CurrentConditions` identical across Rust (camelCase serde) and TS; `geocode`/`fetch_current` command names match between `lib.rs`, `commands.rs`, and `api.ts`; error envelope `{kind,message}` matches the TS `WeatherError`. ✅
 
 **4. Seam coverage:**
-- **Seam 1 (geocode command, cross-process I/O):** contract named in T5 + T7; proof = serialization test (T5: `location_candidate_serializes_null_region`) + frontend parse test (T7). ✅
-- **Seam 2 (fetch_current command, cross-process I/O):** contract in T5 + T7 + T8; proof = T5 envelope/serialize + T7 parse + T8 icon-coverage over all WMO codes. ✅
+- **Seam 1 (geocode command, cross-process I/O):** contract named in T5 + T7; **boundary-crossing proof = T8b golden round-trip** — the real Rust serializer output (pinned by the T8b Rust equality test) is parsed by the TS `LocationCandidate[]` with an exact-key + `region===null` assertion. T5/T7 remain as supporting unit checks; the flow-test `invoke` mocks (T7, T11) do NOT prove this seam — T8b does. ✅
+- **Seam 2 (fetch_current command, cross-process I/O):** contract in T5 + T7 + T8; **boundary-crossing proof = T8b golden round-trip** — the `#[serde(rename_all="camelCase")]` contract (`temperatureC`/`weatherCode`/`conditionLabel`) is provable only here, where the real serializer output is parsed by the TS type; T8 adds icon-coverage over all WMO codes. No longer mock-on-both-sides. ✅
 - **Seam 3 (Open-Meteo geocoding, network-protocol external):** contract in T3; proof = T3 real-payload fixtures incl `results`-absent → `[]` and `admin1`-absent → `null`, plus the Tier-2 `#[ignore]` live test; authority = fixtures captured from the live API + docs page. ✅
 - **Seam 4 (Open-Meteo forecast, network-protocol external):** contract in T4; proof = T4 real-payload fixture + live fetch; authority = captured live response + docs. ✅
 - First-contact auth (no auth) is encoded by sending no credentials and asserted implicitly by the live tests succeeding. ✅

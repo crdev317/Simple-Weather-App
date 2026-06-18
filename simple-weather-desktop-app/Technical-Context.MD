@@ -29,7 +29,7 @@ This is a **two-process app**: a Rust core and a web frontend that talk over the
 **Tauri bindings (frontend):** @tauri-apps/api, @tauri-apps/cli *(dev)*
 **Data / server state:** @tanstack/react-query, wrapping Tauri `invoke` calls (cache/loading/error state over the command boundary) — do **not** add axios or call `fetch` to external hosts from the frontend.
 **Styling:** styled-components (CSS-in-JS, component-scoped) — matches the house style; revisit if a design system is adopted.
-**Rust crates:** tauri, serde + serde_json (typed command payloads), reqwest (HTTP to Open-Meteo), tokio (async runtime), tauri-plugin-log (logging bridge)
+**Rust crates:** tauri, serde + serde_json (typed command payloads), reqwest (HTTP to Open-Meteo), tokio (async runtime), log + tauri-plugin-log (logging façade + bridge)
 **Frontend testing:** vitest, @testing-library/react, @testing-library/jest-dom
 **Rust testing:** built-in `cargo test`; tauri-driver / WebDriver for end-to-end where a real window is needed
 **Lint/format:** eslint, prettier (frontend); rustfmt + clippy (Rust) — *intended; install when tooling is scaffolded.*
