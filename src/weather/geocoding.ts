@@ -24,11 +24,24 @@ export async function searchLocations(query: string): Promise<Location[]> {
   }
   const data = (await response.json()) as GeocodingResponse
   // results is absent (not []) when there are no matches — coalesce.
-  return (data.results ?? []).map((r) => ({
-    name: r.name,
-    latitude: r.latitude,
-    longitude: r.longitude,
-    admin1: r.admin1,
-    country: r.country,
-  }))
+  // A 200 does not guarantee each result is well-shaped: skip any entry missing
+  // a usable name or numeric coordinates rather than emit a half-built Location.
+  return (data.results ?? [])
+    .filter(isUsableResult)
+    .map((r) => ({
+      name: r.name,
+      latitude: r.latitude,
+      longitude: r.longitude,
+      admin1: r.admin1,
+      country: r.country,
+    }))
+}
+
+function isUsableResult(r: GeocodingResult): boolean {
+  return (
+    typeof r?.name === 'string' &&
+    r.name.length > 0 &&
+    Number.isFinite(r.latitude) &&
+    Number.isFinite(r.longitude)
+  )
 }
