@@ -2,9 +2,11 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { Location } from './domain/types'
 import { searchLocations } from './weather/geocoding'
+import { getCurrentWeather } from './weather/forecast'
 import { useDebouncedValue } from './hooks/useDebouncedValue'
 import { SearchBar } from './components/SearchBar'
 import { CandidateList } from './components/CandidateList'
+import { CurrentConditionsReadout } from './components/CurrentConditionsReadout'
 
 export default function App() {
   const [query, setQuery] = useState('')
@@ -17,9 +19,15 @@ export default function App() {
     enabled: debouncedQuery.trim().length >= 2,
   })
 
+  const forecast = useQuery({
+    queryKey: ['forecast', selected?.latitude, selected?.longitude],
+    queryFn: () => getCurrentWeather(selected!),
+    enabled: selected !== null,
+  })
+
   function handleQueryChange(value: string) {
     setQuery(value)
-    setSelected(null) // typing a new Query starts a fresh search
+    setSelected(null) // typing a new Query clears stale weather
   }
 
   return (
@@ -30,9 +38,14 @@ export default function App() {
       {geocoding.isFetching && <p>Loading…</p>}
       {geocoding.isError && <p>Something went wrong</p>}
 
-      {/* Picking a candidate hides the list; the weather readout arrives in the next slice. */}
       {!selected && geocoding.data && (
         <CandidateList candidates={geocoding.data} onPick={setSelected} />
+      )}
+
+      {selected && forecast.isFetching && <p>Loading…</p>}
+      {selected && forecast.isError && <p>Something went wrong</p>}
+      {selected && forecast.data && (
+        <CurrentConditionsReadout location={selected} conditions={forecast.data} />
       )}
     </main>
   )
