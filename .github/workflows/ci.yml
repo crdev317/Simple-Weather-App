@@ -1,0 +1,18 @@
+# Placeholder CI — exists so branch protection can require a stable `ci` check from commit one.
+# It does nothing functional yet. When build / lint / test land, add them as steps (or jobs that
+# this `ci` job depends on) BEHIND this same `ci` name, so the branch-protection rule that requires
+# `ci` never needs revisiting. See CONTRIBUTING.md; the testing contract lands via /init-tech-context.
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  ci:
+    name: ci
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "no checks yet — placeholder pipeline (see CONTRIBUTING.md)"
