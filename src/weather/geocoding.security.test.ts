@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { searchLocations } from './geocoding'
+import malformed200 from './__fixtures__/geocoding-malformed-200.json'
 
 // Captures the URL handed to fetch so we can inspect how the Query was encoded
 // into the outbound Geocoding request. The body is an empty no-match response —
@@ -7,6 +8,14 @@ import { searchLocations } from './geocoding'
 function spyOnGeocodingFetch() {
   return vi.spyOn(globalThis, 'fetch').mockResolvedValue(
     new Response(JSON.stringify({ generationtime_ms: 0 }), { status: 200 }),
+  )
+}
+
+// Serves an arbitrary body on a 200 — used to feed a structurally-unexpected
+// geocoding payload across the Seam 1 trust boundary.
+function mockFetch(body: unknown) {
+  return vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+    new Response(JSON.stringify(body), { status: 200 }),
   )
 }
 
@@ -57,5 +66,28 @@ describe('searchLocations request safety (Seam 1 trust boundary)', () => {
     const url = requestedUrl(fetchSpy)
     expect(url.protocol).toBe('https:')
     expect(url.host).toBe('geocoding-api.open-meteo.com')
+  })
+})
+
+// A candidate Location needs name + coordinates to be usable; the provider's
+// per-result fields are untrusted external input that may be partial on a 200.
+// The mapper must skip any result missing a required field rather than emit a
+// half-built Location that renders garbage (or breaks coordinate keying).
+describe('searchLocations fails closed on malformed results in a 200 (Seam 1 trust boundary)', () => {
+  it('skips result entries missing a required name or numeric coordinates', async () => {
+    mockFetch(malformed200)
+
+    const locations = await searchLocations('Example')
+
+    // Only the one well-formed entry survives; the three malformed ones are dropped.
+    expect(locations).toEqual([
+      {
+        name: 'Valid City',
+        latitude: 10.5,
+        longitude: 20.5,
+        admin1: 'Example Region',
+        country: 'Examplestan',
+      },
+    ])
   })
 })
