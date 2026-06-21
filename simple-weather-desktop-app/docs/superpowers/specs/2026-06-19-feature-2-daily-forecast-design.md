@@ -91,3 +91,10 @@ Per `Technical-Context.MD` (every seam gets real-IO on ≥1 side; treat Open-Met
 - **(e) authority:** Live Open-Meteo forecast API response captured **2026-06-19** from `https://api.open-meteo.com/v1/forecast?latitude=51.51&longitude=-0.13&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,weather_code&forecast_days=7&timezone=auto` (observed: `daily` as parallel arrays `time`/`temperature_2m_max`/`temperature_2m_min`/`weather_code`, each length 7; `daily_units.temperature_2m_max = "°C"`, `daily_units.weather_code = "wmo code"`; `daily.time[0]` = local today after `timezone=auto` resolved to `Europe/London`), corroborated by the official docs `https://open-meteo.com/en/docs`. Not grounded on model memory.
 
 **Channel classes deliberately not crossed by Feature 2:** subprocess, env-var, prior-remote-state, persistent-on-disk-state (still no caching until Feature 3), and host-OS/runtime (the widened fetch→render path has no OS-divergent contract; the platform matrix still runs the Rust tests on Win/Mac/Linux, but there is no OS-specific boundary assertion to make here). The `geocode` command seam and Open-Meteo geocoding seam are unchanged from Feature 1 and inherited, not re-enumerated.
+
+## Feature-doc-gauntlet sign-off
+
+- **Result:** pass
+- **Date:** 2026-06-21
+- **Summary:** All three leaves passed with zero gating findings; both seams carry falsifiable contracts with real-I/O proofs, the Spec/Plan honour ADR-0001 and all Technical-Context Overriding Principles, and every Context reference resolves. Non-gating observations only (CLAUDE.md glossary-filename drift `business-domain-context.md` vs `Context.MD`; `WeatherSnapshot` is an implementation container not pinned in Context.MD).
+- **Leaves:** check-seam-cynicism, check-doc-adr-consistency, check-artefact-consistency
