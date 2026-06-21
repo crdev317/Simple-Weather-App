@@ -25,6 +25,8 @@ The user types a **Query**, the app geocodes it via the Rust `WeatherProvider` (
 
 ## Feature 2: See the multi-day Daily Forecast
 
+**Status:** **Published to ADO** — Feature [#94837](https://dev.azure.com/Enate/4158c5e2-092d-482d-a445-7e910ffbe775/_workitems/edit/94837), 2026-06-21.
+
 After the **Current Conditions**, the user sees a **Daily Forecast** — a strip of **Forecast Days**, each with its day label, high/low, and **Weather Condition** (icon + label). The `WeatherProvider.fetch_weather` call already returns a full **WeatherSnapshot**, so this widens that fetch and adds the forecast UI; no new seam.
 
 **Out of scope:** Hour-by-hour detail (daily only); Saved Locations; persistence / caching; units (still Metric); refresh; Settings.
